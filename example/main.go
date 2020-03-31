@@ -21,7 +21,7 @@ func main() {
 
 	flag.Parse()
 
-	fmt.Printf("body: %+v", *bod)
+	fmt.Printf("body: %+v\n", *bod)
 
 	cfg := sqsc.Config{
 		Region:   *reg,
