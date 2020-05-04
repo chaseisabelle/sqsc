@@ -8,13 +8,19 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
-// the client
+// SQSC - the client
 type SQSC struct {
 	sqs    *sqs.SQS
 	config Config
 }
 
-// the client configs
+// Message - represents one message
+type Message struct {
+	Body          string
+	ReceiptHandle string
+}
+
+// Config - the client configs
 type Config struct {
 	ID       string //<< aws account id
 	Key      string //<< aws auth key - leave blank for no auth
@@ -28,7 +34,7 @@ type Config struct {
 	Wait     int    //<< wait time (seconds)
 }
 
-// creates a new client instance
+// New - creates a new client instance
 func New(cfg *Config) (*SQSC, error) {
 	// default is no-auth
 	crd := credentials.AnonymousCredentials
@@ -77,7 +83,7 @@ func New(cfg *Config) (*SQSC, error) {
 	}, err
 }
 
-// produce a new message on the queue
+// Produce - produce a new message on the queue
 //
 // bod - the message body
 // del - the delay in seconds (usually just use 0)
@@ -115,7 +121,7 @@ func (c *SQSC) Produce(bod string, del int) (string, error) {
 	return id, err
 }
 
-// consume a single message from the queue
+// Consume- consume a single message from the queue
 //
 // returns
 // - the message body
@@ -157,6 +163,42 @@ func (c *SQSC) Consume() (string, string, error) {
 
 	// we done fam
 	return bod, rh, err
+}
+
+// ConsumeBulk - consumer more than one messages
+// number - valid values are between 1 and 10
+// returns array of pointers to messages or error
+func (c *SQSC) ConsumeBulk(number int64) ([]*Message, error) {
+	if number <= 0 || number > 10 {
+		return nil, errors.New("number must be between 1 and 10")
+	}
+
+	// receive message
+	res, err := c.sqs.ReceiveMessage(&sqs.ReceiveMessageInput{
+		QueueUrl:            aws.String(c.config.URL),
+		VisibilityTimeout:   aws.Int64(int64(c.config.Timeout)),
+		WaitTimeSeconds:     aws.Int64(int64(c.config.Wait)),
+		MaxNumberOfMessages: aws.Int64(number),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	msgs := make([]*Message, 0)
+	// get message body if we can
+	if res != nil && len(res.Messages) != 0 {
+		for _, m := range res.Messages {
+			if m.Body != nil && m.ReceiptHandle != nil {
+				msg := &Message{
+					Body:          *m.Body,
+					ReceiptHandle: *m.ReceiptHandle,
+				}
+				msgs = append(msgs, msg)
+			}
+		}
+	}
+	// we done fam
+	return msgs, nil
 }
 
 // delete a message from the queue
