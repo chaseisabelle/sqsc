@@ -8,13 +8,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
-// the client
+// SQSC the client
 type SQSC struct {
 	sqs    *sqs.SQS
 	config Config
 }
 
-// the client configs
+// Config the client configs
 type Config struct {
 	ID       string //<< aws account id
 	Key      string //<< aws auth key - leave blank for no auth
@@ -28,7 +28,7 @@ type Config struct {
 	Wait     int    //<< wait time (seconds)
 }
 
-// creates a new client instance
+// New creates a new client instance
 func New(cfg *Config) (*SQSC, error) {
 	// default is no-auth
 	crd := credentials.AnonymousCredentials
@@ -77,7 +77,7 @@ func New(cfg *Config) (*SQSC, error) {
 	}, err
 }
 
-// produce a new message on the queue
+// Produce produce a new message on the queue
 //
 // bod - the message body
 // del - the delay in seconds (usually just use 0)
@@ -115,7 +115,7 @@ func (c *SQSC) Produce(bod string, del int) (string, error) {
 	return id, err
 }
 
-// consume a single message from the queue
+// Consume consume a single message from the queue
 //
 // returns
 // - the message body
@@ -159,7 +159,7 @@ func (c *SQSC) Consume() (string, string, error) {
 	return bod, rh, err
 }
 
-// delete a message from the queue
+// Delete delete a message from the queue
 //
 // rh - the receipt handle (from sqsc.Consume())
 //
